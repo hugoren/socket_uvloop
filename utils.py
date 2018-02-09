@@ -1,6 +1,7 @@
 import logging
 import datetime
 import maya
+import time
 from functools import wraps
 from sanic.response import json
 from config import TOKEN
@@ -44,5 +45,16 @@ def auth(token):
                 log('error', str(e))
                 return json({'retcode': 1, 'stderr': str(e)})
         return auth_token
+    return wrapper
+
+
+def timethis(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        r = func(*args, **kwargs)
+        end = time.perf_counter()
+        print('{}.{} : {}'.format(func.__module__, func.__name__, end - start))
+        return r
     return wrapper
 
