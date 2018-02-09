@@ -1,0 +1,5 @@
+asyncio==3.4.3
+sanic==0.5.4
+uvloop==0.8.0
+maya==0.3.3
+elasticsearch==6.0.0
