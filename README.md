@@ -13,6 +13,6 @@
 
 
 ###测试
-1. 启动logback_udp_demo(客户端udp发送数据)
+1. 启动logback_udp_demo(客户端udp在线发送数据)
 2. 启动udp服务端service.py
 3. 启动client udp 发送数据
