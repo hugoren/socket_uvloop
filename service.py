@@ -39,11 +39,6 @@ async def handler():
 
 
 if __name__ == "__main__":
-    # from concurrent.futures import ThreadPoolExecutor
-    #
-    # with ThreadPoolExecutor(max_workers=3) as executor:
-    #     executor.submit(handler)
-
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     loop = uvloop.new_event_loop()
     asyncio.set_event_loop(loop)

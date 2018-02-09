@@ -6,17 +6,27 @@ from sanic.response import json
 from config import TOKEN
 from logging.handlers import RotatingFileHandler
 
-FILENAME = 'socket.log'
-BACKUP_COUNT = 5
-FORMAT = '%(asctime)s %(levelname)s %(module)s %(funcName)s-[%(lineno)d] %(message)s'
-LOG_LEVEL = logging.INFO
-MAX_BYTES = 10 * 1024 * 1024
-HANDLER = RotatingFileHandler(FILENAME, mode='a', maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT)
-FORMATTER = logging.Formatter(FORMAT)
-HANDLER.setFormatter(FORMATTER)
-logger = logging.getLogger('sanic_es')
-logger.setLevel(LOG_LEVEL)
-logger.addHandler(HANDLER)
+
+def log(level, message):
+
+    logger = logging.getLogger('socket')
+
+    #  这里进行判断，如果logger.handlers列表为空，则添加，否则，直接去写日志
+    if not logger.handlers:
+        log_name = 'app.log'
+        log_count = 2
+        log_format = '%(asctime)s %(levelname)s %(module)s %(funcName)s-[%(lineno)d] %(message)s'
+        log_level = logging.INFO
+        max_bytes = 10 * 1024 * 1024
+        handler = RotatingFileHandler(log_name, mode='a', maxBytes=max_bytes, backupCount=log_count)
+        handler.setFormatter(logging.Formatter(log_format))
+        logger.setLevel(log_level)
+        logger.addHandler(handler)
+
+    if level == 'info':
+        logger.info(message)
+    if level == 'error':
+        logger.error(message)
 
 
 def auth(token):
@@ -31,7 +41,7 @@ def auth(token):
                 else:
                     return json({'retcode': 1, 'stderr': 'status{}'.format(403)})
             except Exception as e:
-                logger.error(str(e))
+                log.error(str(e))
                 return json({'retcode': 1, 'stderr': str(e)})
         return auth_token
     return wrapper
