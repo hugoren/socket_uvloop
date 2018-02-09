@@ -1,24 +1,8 @@
 import asyncio
 import uvloop
 import socketserver
-
-# async def socket_server():
-#     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#     server_add = ('0.0.0.0', 5454)
-#     s.bind(server_add)
-#     print(server_add)
-#     while 1:
-#         data, addr = s.recvfrom(1024)
-#         print(data.decode())
-#     s.close()
-#
-#
-# if __name__ == "__main__":
-#     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-#     loop = uvloop.new_event_loop()
-#     asyncio.set_event_loop(loop)
-#     loop.run_until_complete(socket_server())
+from config import HOST, PORT
+from utils import log
 
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
@@ -29,12 +13,13 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
 
 async def handler():
-    addr = ('127.0.0.1', 5454)
-    print("begin")
+    print("Socket udp server begin.....")
+    log('info', 'Socket udp server begin.....')
     try:
-        s = socketserver.ThreadingUDPServer(addr, MyUDPHandler)
+        s = socketserver.ThreadingUDPServer((HOST, PORT), MyUDPHandler)
         s.serve_forever()
     except Exception as e:
+        log('error', str(e))
         print(e)
 
 

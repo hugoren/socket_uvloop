@@ -14,6 +14,6 @@ elif env == 'prod':
     TOKEN = 'b0350c8c75ddcd99738df4c9346bec48dc9c4914'
 
 else:
-    HOST = '192.168.6.23'
-    PORT = 9200
+    HOST = '127.0.0.1'
+    PORT = 5454
     TOKEN = 'b0350c8c75ddcd99738df4c9346bec48dc9c4914'
