@@ -5,6 +5,7 @@ import redis
 from functools import wraps
 from sanic.response import json
 from config import TOKEN
+from config import REDIS_HOST, REDIS_PORT, REDIS_DB
 from logging.handlers import RotatingFileHandler
 
 
@@ -71,6 +72,9 @@ async def producer_redis(loop, message):
 
 
 def push_redis(message):
-    pool = redis.ConnectionPool(host='127.0.0.1', port=6379, db=0)
-    r = redis.Redis(connection_pool=pool)
-    r.rpush("log-msg", message)
+    try:
+        pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+        r = redis.Redis(connection_pool=pool)
+        r.rpush("log-msg", message)
+    except Exception as e:
+        log('error', str(e))
