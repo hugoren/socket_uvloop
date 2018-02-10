@@ -4,7 +4,6 @@ import time
 import socketserver
 from config import HOST, PORT
 from utils import log
-from numba import jit
 
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
@@ -36,4 +35,3 @@ if __name__ == "__main__":
     asyncio.set_event_loop(loop)
     loop.run_until_complete(handler())
 
-    # handler()
