@@ -4,7 +4,7 @@ import time
 import socketserver
 from config import HOST, PORT
 from utils import log
-from utils import push_redis
+from utils import rpush_redis
 
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
@@ -12,7 +12,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         start_time = time.time()
         data = self.request[0][:2048]
-        push_redis(data)
+        rpush_redis(data)
         print(time.time() - start_time, data)
 
 

@@ -71,7 +71,7 @@ async def producer_redis(loop, message):
     print(time.time() - start_time)
 
 
-def push_redis(message):
+def rpush_redis(message):
     try:
         pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
         r = redis.Redis(connection_pool=pool)
