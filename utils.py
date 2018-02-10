@@ -1,7 +1,7 @@
 import logging
-import datetime
-import maya
 import time
+import aioredis
+import redis
 from functools import wraps
 from sanic.response import json
 from config import TOKEN
@@ -58,3 +58,19 @@ def timethis(func):
         return r
     return wrapper
 
+
+async def producer_redis(loop, message):
+
+    start_time = time.time()
+    redis = await aioredis.create_redis_pool(
+        'redis://127.0.0.1:6379', db=0, loop=loop)
+    await redis.rpush('log-message', message)
+    redis.close()
+    await redis.wait_closed()
+    print(time.time() - start_time)
+
+
+def push_redis(message):
+    pool = redis.ConnectionPool(host='127.0.0.1', port=6379, db=0)
+    r = redis.Redis(connection_pool=pool)
+    r.rpush("log-msg", message)

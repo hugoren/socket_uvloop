@@ -4,21 +4,19 @@ import time
 import socketserver
 from config import HOST, PORT
 from utils import log
+from utils import push_redis
 
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
+        start_time = time.time()
         data = self.request[0][:2048]
-        self.batching(data)
-
-    def batching(self, data):
-        start = time.time()
-        print(data)
-        print(time.time() - start)
+        push_redis(data)
+        print(time.time() - start_time, data)
 
 
-async def handler():
+def handler():
     print("Socket udp server begin.....")
     log('info', 'Socket udp server begin.....')
     try:
