@@ -10,8 +10,9 @@ from utils import rpush_redis
 class MyUDPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
+        receive_bytes = 2048
         start_time = time.time()
-        data = self.request[0][:2048]
+        data = self.request[0][:receive_bytes]
         rpush_redis(data)
         print(time.time() - start_time, data)
 
