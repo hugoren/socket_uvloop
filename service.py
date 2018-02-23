@@ -2,6 +2,7 @@ import asyncio
 import uvloop
 import time
 import socketserver
+from concurrent.futures import ThreadPoolExecutor
 from config import HOST, PORT
 from utils import log
 from utils import rpush_redis
@@ -32,6 +33,6 @@ if __name__ == "__main__":
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     loop = uvloop.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(handler())
-    loop.run_forever()
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        executor.submit(loop.run_until_complete(handler()))
 
