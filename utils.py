@@ -73,8 +73,7 @@ async def producer_redis(loop, message):
 
 def rpush_redis(message):
     try:
-        pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-        r = redis.Redis(connection_pool=pool)
-        r.rpush("log-msg", message)
+        pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, max_connections=10)
+        redis.Redis(connection_pool=pool).rpush("log-msg", message)
     except Exception as e:
         log('error', str(e))

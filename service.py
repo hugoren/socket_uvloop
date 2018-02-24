@@ -12,13 +12,13 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         receive_bytes = 2048
-        start_time = time.time()
         data = self.request[0][:receive_bytes]
+        start_time = time.time()
         rpush_redis(data)
         print(time.time() - start_time, data)
 
 
-def handler():
+async def handler():
     print("Socket udp server begin.....")
     log('info', 'Socket udp server begin.....')
     try:
