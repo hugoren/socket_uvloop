@@ -2,6 +2,7 @@ import asyncio
 import uvloop
 import time
 import socketserver
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from config import HOST, PORT
 from utils import log
@@ -28,11 +29,11 @@ async def handler():
         log('error', str(e))
         print(e)
 
-
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     loop = uvloop.new_event_loop()
     asyncio.set_event_loop(loop)
     with ThreadPoolExecutor(max_workers=5) as executor:
         executor.submit(loop.run_until_complete(handler()))
+
 

@@ -1,6 +1,8 @@
 import logging
 import time
 import aioredis
+import asyncio
+import uvloop
 import redis
 from functools import wraps
 from sanic.response import json
@@ -70,10 +72,23 @@ async def producer_redis(loop, message):
     await redis.wait_closed()
     print(time.time() - start_time)
 
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+loop = uvloop.new_event_loop()
 
-def rpush_redis(message):
+
+def rpush_redis(msg):
     try:
         pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, max_connections=10)
-        redis.Redis(connection_pool=pool).rpush("log-msg", message)
+        redis.Redis(connection_pool=pool).rpush("log-msg", msg)
+        # async def test():
+        #     print(1)
+        #     redis = await aioredis.create_redis_pool(
+        #         'redis://127.0.0.1:6379', db=0, loop=loop)
+        #     await redis.rpush('log-msg', msg)
+        #     redis.close()
+        #     await redis.wait_closed()
+        # loop.run_until_complete(test())
+
+
     except Exception as e:
         log('error', str(e))
