@@ -1,42 +1,36 @@
 import asyncio
 import uvloop
 import socketserver
+from collections import deque
+from blinker import signal
 from concurrent.futures import ThreadPoolExecutor
 from config import HOST, PORT
 from utils import log
 # from utils import rpush_redis
 import redis
 import time
+q = deque()
+queue_signal = signal("queue_signal")
 
 
-global data_list
-data_list = []
+@queue_signal.connect
+def rpush_data(data_list):
+    try:
+        msg_key = "log-msg"
+        pool = redis.ConnectionPool(host="127.0.0.1", port=6379, db=0, max_connections=10)
+        r = redis.StrictRedis(connection_pool=pool)
+        [r.rpush(msg_key, i) for i in data_list]
+    except Exception as e:
+        log('error', str(e))
 
 
-class RedisPool:
-    def __init__(self):
-        self.pool = redis.ConnectionPool(host="127.0.0.1", port=6379, db=0, max_connections=10)
-        self.n = 0
-
-    @staticmethod
-    def rpush_data(self):
-        try:
-            msg_key = "log-msg"
-            # start_time = time.time()
-            pool = redis.ConnectionPool(host="127.0.0.1", port=6379, db=0, max_connections=10)
-            r = redis.StrictRedis(connection_pool=pool)
-            [r.rpush(msg_key, i) for i in data_list]
-            data_list.clear()
-            # print(time.time() - start_time)
-        except Exception as e:
-            log('error', str(e))
-
-    def recev_data(self, msg):
-        data_list.append(msg)
-        if data_list.__len__() >= 500:
-            start_time = time.time()
-            self.rpush_data(data_list)
-            print(time.time() - start_time)
+def is_list_full():
+    if q.__len__() >= 501:
+        start_time = time.time()
+        data_list = [q.pop() for i in range(500)]
+        # rpush_data(data_list)
+        queue_signal.send(data_list)
+        print(time.time() - start_time)
 
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
@@ -44,7 +38,8 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         receive_bytes = 2048
         data = self.request[0][:receive_bytes]
-        RedisPool().recev_data(data)
+        q.appendleft(data)
+        is_list_full()
 
 
 def handler():
