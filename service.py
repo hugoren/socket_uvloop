@@ -3,7 +3,6 @@ import uvloop
 import socketserver
 from collections import deque
 from blinker import signal
-from numba import jit
 from concurrent.futures import ThreadPoolExecutor
 from config import HOST, PORT
 from utils import log
@@ -31,6 +30,7 @@ def is_list_max():
     if q.__len__() >= list_max:
         start_time = time.time()
         data_list = [q.pop() for i in range(list_max-1)]
+        print(data_list)
         # rpush_data(data_list)
         queue_signal.send(data_list)
         print(time.time() - start_time)
@@ -45,7 +45,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         is_list_max()
 
 
-def handler():
+async def handler():
     print("Socket udp server begin.....")
     log('info', 'Socket udp server begin.....')
     try:
