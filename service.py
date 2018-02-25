@@ -3,12 +3,14 @@ import uvloop
 import socketserver
 from collections import deque
 from blinker import signal
+from numba import jit
 from concurrent.futures import ThreadPoolExecutor
 from config import HOST, PORT
 from utils import log
 # from utils import rpush_redis
 import redis
 import time
+
 q = deque()
 queue_signal = signal("queue_signal")
 
@@ -24,10 +26,11 @@ def rpush_data(data_list):
         log('error', str(e))
 
 
-def is_list_full():
-    if q.__len__() >= 501:
+def is_list_max():
+    list_max = 500
+    if q.__len__() >= list_max:
         start_time = time.time()
-        data_list = [q.pop() for i in range(500)]
+        data_list = [q.pop() for i in range(list_max-1)]
         # rpush_data(data_list)
         queue_signal.send(data_list)
         print(time.time() - start_time)
@@ -39,7 +42,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         receive_bytes = 2048
         data = self.request[0][:receive_bytes]
         q.appendleft(data)
-        is_list_full()
+        is_list_max()
 
 
 def handler():
