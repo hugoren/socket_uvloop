@@ -76,10 +76,13 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 loop = uvloop.new_event_loop()
 
 
-def rpush_redis(msg):
+def rpush_redis(msg_list):
     try:
+        start_time = time.time()
         pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, max_connections=10)
-        redis.Redis(connection_pool=pool).rpush("log-msg", msg)
+        r = redis.StrictRedis(connection_pool=pool)
+        [r.rpush("log-msg", i) for i in msg_list]
+        print(time.time() - start_time)
         # async def test():
         #     print(1)
         #     redis = await aioredis.create_redis_pool(
@@ -88,7 +91,7 @@ def rpush_redis(msg):
         #     redis.close()
         #     await redis.wait_closed()
         # loop.run_until_complete(test())
-
-
     except Exception as e:
         log('error', str(e))
+
+
