@@ -12,6 +12,7 @@ import time
 
 q = deque()
 queue_signal = signal("queue_signal")
+q_num = 0
 
 
 @queue_signal.connect
@@ -25,15 +26,21 @@ def rpush_data(data_list):
         log('error', str(e))
 
 
-def is_list_max():
-    list_max = 500
+def is_list_max(list_max=3000):
+
     if q.__len__() >= list_max:
         start_time = time.time()
-        data_list = [q.pop() for i in range(list_max-1)]
-        print(data_list)
+        data_list = [q.pop() for i in range(list_max)]
         # rpush_data(data_list)
         queue_signal.send(data_list)
         print(time.time() - start_time)
+    # else:
+    #     global q_num
+    #     print(q_num)
+    #     if q_num == q.__len__() and q_num >=1:
+    #         data_list = [q.pop() for i in range(q_num)]
+    #         queue_signal.send(data_list)
+    #     q_num = q.__len__()
 
 
 class MyUDPHandler(socketserver.BaseRequestHandler):
