@@ -8,3 +8,7 @@ while 1:
     s.sendto(bytes(data[:buf_size], encoding="utf-8"), addr)
     print(data[:buf_size])
 s.close()
+# for i in range(1000):
+#     s.sendto(bytes(data[:buf_size], encoding="utf-8"), addr)
+#     print(data[:buf_size])
+# s.close()
