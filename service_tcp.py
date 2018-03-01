@@ -52,6 +52,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
         print(ip, port)
 
     def handle(self):
+        #  keep alive
         while 1:
             data = self.request.recv(1024)
             if data:

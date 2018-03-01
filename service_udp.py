@@ -49,17 +49,22 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         receive_bytes = 2048
+        # while 1:
         data = self.request[0][:receive_bytes]
-        q.appendleft(data)
-        print(q.__sizeof__())
-        is_list_max()
+        if data:
+            q.appendleft(data)
+            print(q.__sizeof__())
+            is_list_max()
+
+    def finish(self):
+        print("client is disconnect")
 
 
 async def handler():
     print("Socket udp server begin.....")
     log('info', 'Socket udp server begin.....')
     try:
-        s = socketserver.ThreadingUDPServer((HOST, PORT), MyUDPHandler)
+        s = socketserver.ForkingUDPServer((HOST, PORT), MyUDPHandler)
         s.serve_forever()
     except Exception as e:
         log('error', str(e))
