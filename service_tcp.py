@@ -45,19 +45,28 @@ def is_list_max(list_max=3000):
         print(q_num)
 
 
-class MyTCPHandler(socketserver.BaseRequestHandler):
+class TCPHandler(socketserver.BaseRequestHandler):
+    def setup(self):
+        ip = self.client_address[0].strip()
+        port = self.client_address[1]
+        print(ip, port)
 
     def handle(self):
-        data = self.request.recv(1024)
-        print(data)
-        self.request.sendall(b"recev success!")
+        while 1:
+            data = self.request.recv(1024)
+            if data:
+                print(data)
+                self.request.sendall(b"recev success!")
+
+    def finish(self):
+        print("client is disconnect")
 
 
 async def handler():
-    print("Socket udp server begin.....")
-    log('info', 'Socket udp server begin.....')
+    print("Socket tcp server begin.....")
+    log('info', 'Socket tcp server begin.....')
     try:
-        s = socketserver.ThreadingTCPServer((HOST, PORT), MyTCPHandler)
+        s = socketserver.ThreadingTCPServer((HOST, PORT), TCPHandler)
         s.serve_forever()
     except Exception as e:
         log('error', str(e))
