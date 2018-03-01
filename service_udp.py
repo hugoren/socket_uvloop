@@ -36,11 +36,9 @@ def is_list_max(list_max=3000):
         print(time.time() - start_time)
     else:
         global q_num
-        print(q_num)
         if q_num == q.__len__() and q_num >=1:
             data_list = [q.pop() for i in range(q_num)]
             queue_signal.send(data_list)
-            print(q_num, "eqfsafsafadsf")
         q_num = q.__len__()
         print(q_num)
 
