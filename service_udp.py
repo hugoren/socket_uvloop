@@ -43,7 +43,7 @@ def is_list_max(list_max=3000):
         print(q_num)
 
 
-class MyUDPHandler(socketserver.BaseRequestHandler):
+class UDPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         receive_bytes = 2048
@@ -62,7 +62,7 @@ async def handler():
     print("Socket udp server begin.....")
     log('info', 'Socket udp server begin.....')
     try:
-        s = socketserver.ForkingUDPServer((HOST, PORT), MyUDPHandler)
+        s = socketserver.ForkingUDPServer((HOST, PORT), UDPHandler)
         s.serve_forever()
     except Exception as e:
         log('error', str(e))

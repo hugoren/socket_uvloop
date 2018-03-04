@@ -4,13 +4,14 @@ import socketserver
 from collections import deque
 from blinker import signal
 from concurrent.futures import ThreadPoolExecutor
+from config import REDIS_HOST, REDIS_PORT, REDIS_DB
 from config import HOST, PORT
 from utils import log
 # from utils import rpush_redis
 import redis
 import time
 
-q = deque()
+q = deque(maxlen=150000)
 queue_signal = signal("queue_signal")
 q_num = 0
 
@@ -19,7 +20,7 @@ q_num = 0
 def rpush_data(data_list):
     try:
         msg_key = "log-msg"
-        pool = redis.ConnectionPool(host="127.0.0.1", port=6379, db=0, max_connections=10)
+        pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, max_connections=10)
         r = redis.StrictRedis(connection_pool=pool)
         [r.rpush(msg_key, i) for i in data_list]
     except Exception as e:
@@ -40,7 +41,6 @@ def is_list_max(list_max=3000):
             data_list = [q.pop() for i in range(q_num)]
             queue_signal.send(data_list)
         q_num = q.__len__()
-        print(q_num)
 
 
 class TCPHandler(socketserver.BaseRequestHandler):
@@ -52,8 +52,10 @@ class TCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         #  keep alive
         while 1:
-            data = self.request.recv(1024)
+            buff_recv = 2048
+            data = self.request.recv(buff_recv)
             if data:
+                # print(data)
                 q.appendleft(data)
                 is_list_max()
                 self.request.sendall(b"recev success!")
