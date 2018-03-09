@@ -19,5 +19,5 @@ else:
     TOKEN = 'b0350c8c75ddcd99738df4c9346bec48dc9c4914'
     REDIS_HOST = "127.0.0.1"
     REDIS_PORT = 6379
-    REDIS_DB = 0
+    REDIS_DB = 3
 

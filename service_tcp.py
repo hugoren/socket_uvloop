@@ -7,6 +7,9 @@ from concurrent.futures import ThreadPoolExecutor
 from config import REDIS_HOST, REDIS_PORT, REDIS_DB
 from config import HOST, PORT
 from utils import log
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
+from datetime import datetime
 # from utils import rpush_redis
 import redis
 import time
@@ -16,8 +19,20 @@ queue_signal = signal("queue_signal")
 q_num = 0
 
 
+# @queue_signal.connect
+def write_to_es(actions):
+    try:
+        print(actions)
+        _index = "log-{0}".format(time.strftime("%Y%m%d"))
+        es = Elasticsearch(["192.168.6.23:9200"])
+        bulk(es, actions, index=_index, raise_on_error=True)
+    except Exception as e:
+        print(e)
+        log("error", str(e))
+
+
 @queue_signal.connect
-def rpush_data(data_list):
+def rpush_data_to_redis(data_list):
     try:
         msg_key = "log-msg"
         pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, max_connections=10)
@@ -27,14 +42,24 @@ def rpush_data(data_list):
         log('error', str(e))
 
 
-def is_list_max(list_max=3000):
+def is_queue_max(list_max=1000):
 
     if q.__len__() >= list_max:
-        start_time = time.time()
-        data_list = [q.pop() for i in range(list_max)]
-        # rpush_data(data_list)
-        queue_signal.send(data_list)
-        print(time.time() - start_time)
+        # data_list = [q.pop() for i in range(list_max)]
+        # queue_signal.send(data_list)
+        _index = "log-{0}".format(time.strftime("%Y%m%d"))
+        _type = "log"
+        actions = [{
+            "_index": _index,
+            "_type": _type,
+
+            "_source": {
+                "timestamp": datetime.now(),
+                "msg": str(q.pop(), "utf-8"),
+            }
+        } for i in range(list_max)]
+        queue_signal.send(actions)
+
     else:
         global q_num
         if q_num == q.__len__() and q_num >=1:
@@ -57,7 +82,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
             if data:
                 # print(data)
                 q.appendleft(data)
-                is_list_max()
+                is_queue_max()
                 self.request.sendall(b"recev success!")
 
     def finish(self):
