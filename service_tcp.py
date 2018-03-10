@@ -6,6 +6,7 @@ from blinker import signal
 from concurrent.futures import ThreadPoolExecutor
 from config import REDIS_HOST, REDIS_PORT, REDIS_DB
 from config import HOST, PORT
+from config import QUEUE_MAX
 from utils import log
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
@@ -13,16 +14,16 @@ from datetime import datetime
 # from utils import rpush_redis
 import redis
 import time
+import json
 
-q = deque(maxlen=150000)
+q = deque(maxlen=15000)
 queue_signal = signal("queue_signal")
 q_num = 0
 
 
-# @queue_signal.connect
+@queue_signal.connect
 def write_to_es(actions):
     try:
-        print(actions)
         _index = "log-{0}".format(time.strftime("%Y%m%d"))
         es = Elasticsearch(["192.168.6.23:9200"])
         bulk(es, actions, index=_index, raise_on_error=True)
@@ -31,7 +32,7 @@ def write_to_es(actions):
         log("error", str(e))
 
 
-@queue_signal.connect
+# @queue_signal.connect
 def rpush_data_to_redis(data_list):
     try:
         msg_key = "log-msg"
@@ -42,7 +43,7 @@ def rpush_data_to_redis(data_list):
         log('error', str(e))
 
 
-def is_queue_max(list_max=1000):
+def is_queue_max(list_max=QUEUE_MAX):
 
     if q.__len__() >= list_max:
         # data_list = [q.pop() for i in range(list_max)]
@@ -53,10 +54,7 @@ def is_queue_max(list_max=1000):
             "_index": _index,
             "_type": _type,
 
-            "_source": {
-                "timestamp": datetime.now(),
-                "msg": str(q.pop(), "utf-8"),
-            }
+            "_source": json.dumps(str(q.pop()))
         } for i in range(list_max)]
         queue_signal.send(actions)
 
@@ -80,7 +78,6 @@ class TCPHandler(socketserver.BaseRequestHandler):
             buff_recv = 2048
             data = self.request.recv(buff_recv)
             if data:
-                # print(data)
                 q.appendleft(data)
                 is_queue_max()
                 self.request.sendall(b"recev success!")
