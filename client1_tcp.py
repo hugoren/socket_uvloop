@@ -3,7 +3,8 @@ import socket
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.connect(('127.0.0.1', 5454))
     while 1:
-        sock.send(b'{@timestamp":"2018-03-09T16:35:09.912+08:00","@version":1,"message":">>>>>>>>>>>>>>>","logger_name":"com.oeasy.filter.LoginFilter","thread_name":"http-nio-7245-exec-13","level":"DEBUG","level_value":10000,"springAppName":"yihao01-advert-web","LOG_PORT":"5454","LOG_HOST":"192.168.0.106","X-Trace-LogId":"011031151","X-B3-TraceId":"1feec530138b9874","X-Span-Export":"true","X-B3-SpanId":"1feec530138b9874"}\\n')
+        data = b'{"@timestamp":"2018-03-09T17:10:45.182+08:00","@version":1,"message":"Fetching config from server at: http://192.168.0.106:7998/","logger_name":"org.springframework.cloud.config.client.ConfigServicePropertySourceLocator","thread_name":"DiscoveryClient-InstanceInfoReplicator-0","level":"INFO","level_value":20000,"springAppName":"yihao01-comment","LOG_PORT":"5454","LOG_HOST":"192.168.0.106","X-Trace-LogId":"01010647"}\n'
+        sock.send(data)
         print(sock.recv(1024))
 
 

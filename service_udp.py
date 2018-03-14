@@ -12,8 +12,8 @@ import time
 
 q = deque()
 queue_signal = signal("queue_signal")
-q_num = 0
 
+q_num = 0
 
 @queue_signal.connect
 def rpush_data_to_redis(data_list):
@@ -50,6 +50,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         data = self.request[0][:receive_bytes]
         if data:
             q.appendleft(data)
+
             print(q)
             is_queue_max()
 
