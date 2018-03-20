@@ -99,7 +99,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
             if data:
                 data_buffer += data
                 # 1M
-                if len(data_buffer) >= 1048576:
+                if len(data_buffer) >= 3072:
                     q.appendleft(data_buffer)
                     data_buffer = bytes()
                     is_queue_max()
