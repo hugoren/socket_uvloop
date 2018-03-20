@@ -1,21 +1,27 @@
-import asyncio
-import uvloop
-import socketserver
 import re
-from collections import deque
-from blinker import signal
-from concurrent.futures import ThreadPoolExecutor
-from config import REDIS_HOST, REDIS_PORT, REDIS_DB
-from config import HOST, PORT
-from config import QUEUE_MAX
-from utils import log
-from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk
-# from utils import rpush_redis
-import redis
 import time
+import redis
+import uvloop
+import asyncio
+import socketserver
 
-q = deque(maxlen=15000)
+from numba import jit
+from blinker import signal
+from collections import deque
+from elasticsearch.helpers import bulk
+from elasticsearch import Elasticsearch
+from concurrent.futures import ThreadPoolExecutor
+
+from utils import log
+from config import QUEUE_MAX
+from config import HOST, PORT
+from config import REDIS_HOST, REDIS_PORT, REDIS_DB
+
+
+# from utils import rpush_redis
+
+
+q = deque(maxlen=1000)
 queue_signal = signal("queue_signal")
 q_num = 0
 
@@ -49,15 +55,16 @@ def string_to_dict(msg_string):
         split_n = msg_string.split("\\n")
         for i in split_n:
             tmp = p.findall(str(i))
-            print(tmp)
-            split_dot = tmp[0].split(",", maxsplit=1)
-            d = {}
+            if tmp:
+                split_dot = tmp[0].split(",", maxsplit=1)
+                d = {}
 
-            for j in split_dot:
-                split_molon = j.split(":", maxsplit=1)
-                if len(split_molon) == 2:
-                    d[split_molon[0]] = split_molon[1]
-            yield d
+                for j in split_dot:
+                    split_molon = j.split(":", maxsplit=1)
+                    if len(split_molon) == 2:
+                        d[split_molon[0]] = split_molon[1]
+                print(d)
+                yield d
 
     except Exception as e:
         print(e)
@@ -68,9 +75,10 @@ def is_queue_max(list_max=QUEUE_MAX):
     if q.__len__() >= list_max:
         # data_list = [string_to_dict(str(q.pop())) for i in range(list_max)]
         for i in range(list_max):
-            data_list = string_to_dict(str(q.pop()))
-            for i in data_list:
-                queue_signal.send(i)
+            if q.__len__():
+                data_list = string_to_dict(str(q.pop()))
+                for i in data_list:
+                    queue_signal.send(i)
         # _index = "log-{0}".format(time.strftime("%Y%m%d"))
         # _type = "log"
         #
@@ -109,7 +117,9 @@ class TCPHandler(socketserver.BaseRequestHandler):
             data = self.request.recv(buff_recv)
             if data:
                 data_buffer += data
-                if len(data_buffer) >= 5000:
+                print(data_buffer)
+                # 1M
+                if len(data_buffer) >= 1048576:
                     q.appendleft(data_buffer)
                     data_buffer = bytes()
                     is_queue_max()
