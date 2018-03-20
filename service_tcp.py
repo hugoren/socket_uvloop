@@ -5,7 +5,6 @@ import uvloop
 import asyncio
 import socketserver
 
-from numba import jit
 from blinker import signal
 from collections import deque
 from elasticsearch.helpers import bulk
@@ -18,15 +17,12 @@ from config import HOST, PORT
 from config import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 
-# from utils import rpush_redis
-
-
 q = deque(maxlen=1000)
 queue_signal = signal("queue_signal")
 q_num = 0
 
-
 p = re.compile(r'\".*\"')
+
 
 # @queue_signal.connect
 def write_to_es(actions):
@@ -51,6 +47,12 @@ def rpush_data_to_redis(data_list):
 
 def string_to_dict(msg_string):
 
+    """
+    1. 根据\n 标记号来分包
+    2. 组成dict
+    3. yield 返回dict格式的日志数据
+    """
+
     try:
         split_n = msg_string.split("\\n")
         for i in split_n:
@@ -58,7 +60,6 @@ def string_to_dict(msg_string):
             if tmp:
                 split_dot = tmp[0].split(",", maxsplit=1)
                 d = {}
-
                 for j in split_dot:
                     split_molon = j.split(":", maxsplit=1)
                     if len(split_molon) == 2:
@@ -71,36 +72,16 @@ def string_to_dict(msg_string):
 
 
 def is_queue_max(list_max=QUEUE_MAX):
-
+    """
+       1. 每条队列1m，大于10条，开始转格式
+       2. 信号量方式调用写入redis
+    """
     if q.__len__() >= list_max:
-        # data_list = [string_to_dict(str(q.pop())) for i in range(list_max)]
         for i in range(list_max):
             if q.__len__():
                 data_list = string_to_dict(str(q.pop()))
-                for i in data_list:
-                    queue_signal.send(i)
-        # _index = "log-{0}".format(time.strftime("%Y%m%d"))
-        # _type = "log"
-        #
-        # try:
-        #     actions = [{
-        #         "_index": _index,
-        #         "_type": _type,
-        #         "_source": eval(q.pop())
-        #     } for i in range(list_max)]
-        # except Exception as e:
-        #     print("json to dict exception, data:{0}".format(str(e)))
-        #
-        # queue_signal.send(actions)
-
-
-
-    # else:
-    #     global q_num
-    #     if q_num == q.__len__() and q_num >=1:
-    #         data_list = [q.pop() for i in range(q_num)]
-    #         # queue_signal.send(data_list)
-    #     q_num = q.__len__()
+                for j in data_list:
+                    queue_signal.send(j)
 
 
 class TCPHandler(socketserver.BaseRequestHandler):
@@ -110,14 +91,13 @@ class TCPHandler(socketserver.BaseRequestHandler):
         print(ip, port)
 
     def handle(self):
-        #  keep alive
         buff_recv = 2048
         data_buffer = bytes()
+        #  keep alive
         while 1:
             data = self.request.recv(buff_recv)
             if data:
                 data_buffer += data
-                print(data_buffer)
                 # 1M
                 if len(data_buffer) >= 1048576:
                     q.appendleft(data_buffer)
