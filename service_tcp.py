@@ -1,6 +1,7 @@
 import asyncio
 import uvloop
 import socketserver
+import re
 from collections import deque
 from blinker import signal
 from concurrent.futures import ThreadPoolExecutor
@@ -10,16 +11,16 @@ from config import QUEUE_MAX
 from utils import log
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
-from datetime import datetime
 # from utils import rpush_redis
 import redis
 import time
-import json
 
 q = deque(maxlen=15000)
 queue_signal = signal("queue_signal")
 q_num = 0
 
+
+p = re.compile(r'\".*\"')
 
 # @queue_signal.connect
 def write_to_es(actions):
@@ -42,11 +43,34 @@ def rpush_data_to_redis(data_list):
         log('error', str(e))
 
 
+def string_to_dict(msg_string):
+
+    try:
+        split_n = msg_string.split("\\n")
+        for i in split_n:
+            tmp = p.findall(str(i))
+            print(tmp)
+            split_dot = tmp[0].split(",", maxsplit=1)
+            d = {}
+
+            for j in split_dot:
+                split_molon = j.split(":", maxsplit=1)
+                if len(split_molon) == 2:
+                    d[split_molon[0]] = split_molon[1]
+            yield d
+
+    except Exception as e:
+        print(e)
+
+
 def is_queue_max(list_max=QUEUE_MAX):
 
     if q.__len__() >= list_max:
-        data_list = [q.pop() for i in range(list_max)]
-        queue_signal.send(data_list)
+        # data_list = [string_to_dict(str(q.pop())) for i in range(list_max)]
+        for i in range(list_max):
+            data_list = string_to_dict(str(q.pop()))
+            for i in data_list:
+                queue_signal.send(i)
         # _index = "log-{0}".format(time.strftime("%Y%m%d"))
         # _type = "log"
         #
@@ -82,19 +106,13 @@ class TCPHandler(socketserver.BaseRequestHandler):
         buff_recv = 2048
         data_buffer = bytes()
         while 1:
-            print(data_buffer)
             data = self.request.recv(buff_recv)
             if data:
-                time.sleep(1)
-                print(data)
-                # if data.endswith(b"\n"):
-                #     data_buffer += data
-                #     q.appendleft(data)
-                #     data_buffer = b""
-                # else:
-                #     data_buffer += data
-
-                is_queue_max()
+                data_buffer += data
+                if len(data_buffer) >= 5000:
+                    q.appendleft(data_buffer)
+                    data_buffer = bytes()
+                    is_queue_max()
                 self.request.sendall(b"recev success!")
 
     def finish(self):
