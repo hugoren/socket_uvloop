@@ -17,16 +17,19 @@ from config import HOST, PORT
 from config import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 
-q = deque(maxlen=1000)
+q = deque(maxlen=10000)
+q_action = deque(maxlen=10000)
 queue_signal = signal("queue_signal")
 q_num = 0
 
 p = re.compile(r'\".*\"')
 
 
-# @queue_signal.connect
-def write_to_es(actions):
+@queue_signal.connect
+def write_bulk_to_es(actions):
+
     try:
+        print(actions)
         _index = "log-{0}".format(time.strftime("%Y%m%d"))
         es = Elasticsearch(["192.168.6.23:9200"])
         bulk(es, actions, index=_index, raise_on_error=True)
@@ -34,13 +37,13 @@ def write_to_es(actions):
         print(e)
 
 
-@queue_signal.connect
-def rpush_data_to_redis(data_list):
+# @queue_signal.connect
+def rpush_data_to_redis(data):
     try:
         msg_key = "log-msg"
         pool = redis.ConnectionPool(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, max_connections=10)
         r = redis.StrictRedis(connection_pool=pool)
-        [r.rpush(msg_key, i) for i in data_list]
+        r.rpush(msg_key, data)
     except Exception as e:
         log('error', str(e))
 
@@ -58,14 +61,19 @@ def string_to_dict(msg_string):
         for i in split_n:
             tmp = p.findall(str(i))
             if tmp:
-                split_dot = tmp[0].split(",", maxsplit=1)
-                d = {}
-                for j in split_dot:
-                    split_molon = j.split(":", maxsplit=1)
-                    if len(split_molon) == 2:
-                        d[split_molon[0]] = split_molon[1]
-                print(d)
-                yield d
+                for j in tmp:
+                    split_dot = j.split(",")
+                    d = {}
+                    for j in split_dot:
+                        split_molon = j.split(":", maxsplit=1)
+                        if len(split_molon) == 2:
+                            d[split_molon[0]] = str(split_molon[1])
+                    if d:
+
+                        d["_index"] = "log-{0}".format(time.strftime("%Y%m%d"))
+                        d["_type"] = "log"
+                        q_action.append(d)
+                    print(d)
 
     except Exception as e:
         print(e)
@@ -76,12 +84,22 @@ def is_queue_max(list_max=QUEUE_MAX):
        1. 每条队列1m，大于10条，开始转格式
        2. 信号量方式调用写入redis
     """
+    _index = "log-{0}".format(time.strftime("%Y%m%d"))
     if q.__len__() >= list_max:
+
         for i in range(list_max):
             if q.__len__():
-                data_list = string_to_dict(str(q.pop()))
-                for j in data_list:
-                    queue_signal.send(j)
+                string_to_dict(str(q.popleft()))
+
+    if q_action.__len__() >= list_max:
+        # actions = [{
+        #             "_index": _index,
+        #             "_type": "log",
+        #
+        #             # "_source": q_action.popleft()
+        #         } for i in range(list_max)]
+        actions = [q_action.popleft() for i in range(list_max)]
+        queue_signal.send(actions)
 
 
 class TCPHandler(socketserver.BaseRequestHandler):

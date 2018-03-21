@@ -9,7 +9,7 @@ if env == 'test':
     REDIS_HOST = "192.168.6.23"
     REDIS_PORT = 6379
     REDIS_DB = 3
-    QUEUE_MAX = 50
+    QUEUE_MAX = 5
 
 
 
@@ -30,5 +30,5 @@ else:
     REDIS_HOST = "127.0.0.1"
     REDIS_PORT = 6379
     REDIS_DB = 3
-    QUEUE_MAX = 20
+    QUEUE_MAX = 1
 
