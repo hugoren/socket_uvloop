@@ -3,7 +3,6 @@ import time
 import redis
 import uvloop
 import asyncio
-import socketserver
 
 from blinker import signal
 from collections import deque
@@ -13,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 from utils import log
 from config import QUEUE_MAX
-from config import HOST, PORT
 from config import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 
@@ -48,6 +46,7 @@ async def redis_lpop(num=10):
                 bytes_data += data
         return bytes_data
     except Exception as e:
+        print("redis_lpop", str(e))
         log('error', str(e))
 
 
@@ -56,7 +55,7 @@ async def string_to_dict(msg_string):
     """
     1. 根据\n 标记号来分包
     2. 组成dict
-    3. yield 返回dict格式的日志数据
+    3. yield 返回dict格式的日志数据或直接存于内存队列
     """
     try:
         split_n = msg_string.split("\\n")
@@ -69,7 +68,11 @@ async def string_to_dict(msg_string):
                     for k in split_dot:
                         split_molon = k.split(":", maxsplit=1)
                         if len(split_molon) == 2:
-                            d[split_molon[0]] = str(split_molon[1])
+                            if split_molon[0] == "message":
+                                d[split_molon[0]] = str(split_molon[1]).encode("utf-8")
+                            else:
+                                d[split_molon[0]] = str(split_molon[1])
+
                     if d:
                         d["_index"] = "log-{0}".format(time.strftime("%Y%m%d"))
                         d["_type"] = "log"
@@ -79,7 +82,7 @@ async def string_to_dict(msg_string):
                         # 存进redis, 再消费进es
                         # queue_signal.send(d)
     except Exception as e:
-        print("string_to_dict", e)
+        print("string_to_dict", "error:", e)
 
 
 async def is_queue_max(list_max=QUEUE_MAX):
@@ -87,8 +90,6 @@ async def is_queue_max(list_max=QUEUE_MAX):
         if q_action.__len__() >= list_max:
             actions = [q_action.popleft() for i in range(list_max)]
             queue_signal.send(actions)
-
-
     except Exception as e:
         print("is_queue_max", e)
 
