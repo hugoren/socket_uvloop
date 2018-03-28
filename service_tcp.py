@@ -1,3 +1,4 @@
+# coding=utf-8
 import redis
 import uvloop
 import asyncio
@@ -19,7 +20,7 @@ def rpush_data_to_redis(data):
     except Exception as e:
         log('error', str(e))
 
-
+import chardet
 class TCPHandler(socketserver.BaseRequestHandler):
     def setup(self):
         ip = self.client_address[0].strip()

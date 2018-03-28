@@ -42,7 +42,6 @@ def is_queue_max(list_max=3000):
 
         q_num = q.__len__()
 
-
 class UDPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
@@ -50,8 +49,6 @@ class UDPHandler(socketserver.BaseRequestHandler):
         data = self.request[0][:receive_bytes]
         if data:
             q.appendleft(data)
-
-            print(q)
             is_queue_max()
 
     # def finish(self):

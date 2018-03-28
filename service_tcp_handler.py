@@ -26,7 +26,7 @@ p = re.compile(r'\".*\"')
 def write_bulk_to_es(actions):
 
     try:
-        print(actions)
+        # print(actions)
         _index = "log-{0}".format(time.strftime("%Y%m%d"))
         es = Elasticsearch(["192.168.6.23:9200"])
         bulk(es, actions, index=_index, raise_on_error=True)
@@ -69,7 +69,9 @@ async def string_to_dict(msg_string):
                         split_molon = k.split(":", maxsplit=1)
                         if len(split_molon) == 2:
                             if split_molon[0] == "message":
-                                d[split_molon[0]] = str(split_molon[1]).encode("utf-8")
+                                msg = split_molon[1].replace("\\\\", "\\").encode("ascii").decode("unicode_escape")
+                                d[split_molon[0]] = msg
+                                print(msg)
                             else:
                                 d[split_molon[0]] = str(split_molon[1])
 
